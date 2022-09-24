@@ -79,18 +79,6 @@ func Run() {
 
 	srv := server.NewServer(&cfg, handler.Init(&cfg))
 
-	startServer(ctx, srv)
-
-}
-
-func setFlags(cfg *config.Config) {
-	flag.StringVar(&cfg.Client.AccrualSystemAddress, "r", cfg.Client.AccrualSystemAddress, "address for starting accrual system instance")
-	flag.StringVar(&cfg.Server.RunAddress, "a", cfg.Server.RunAddress, "address for starting gophermart")
-	flag.StringVar(&cfg.Postgres.DatabaseURI, "d", cfg.Postgres.DatabaseURI, "database connection string")
-	flag.Parse()
-}
-
-func startServer(ctx context.Context, srv *server.Server) {
 	quit := make(chan os.Signal, 1)
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
@@ -112,4 +100,12 @@ func startServer(ctx context.Context, srv *server.Server) {
 	if err := srv.Stop(ctx); err != nil {
 		mylog.SugarLogger.Errorf("failed to stop server: %v", err)
 	}
+
+}
+
+func setFlags(cfg *config.Config) {
+	flag.StringVar(&cfg.Client.AccrualSystemAddress, "r", cfg.Client.AccrualSystemAddress, "address for starting accrual system instance")
+	flag.StringVar(&cfg.Server.RunAddress, "a", cfg.Server.RunAddress, "address for starting gophermart")
+	flag.StringVar(&cfg.Postgres.DatabaseURI, "d", cfg.Postgres.DatabaseURI, "database connection string")
+	flag.Parse()
 }
