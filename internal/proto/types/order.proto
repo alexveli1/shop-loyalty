@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+// имя proto-пакета и версия
+// версию указывать необязательно, это общепринятый подход
+// для версионирования спецификации
+package types.v1beta1;
+
+// импорт внешнего proto-файла, который определяет Timestamp message
+// эта зависимость устанавливается вместе с protoc
+// Go-тип time.Time невозможно определить через proto3,
+// поэтому используем готовое решение
+import "google/protobuf/timestamp.proto";
+
+// опция задаёт Go-путь для генерируемого типа
+option go_package = "/proto";
+
+// описание типа Order
+message Order {
+  int64 orderid = 1;                // Go: []byte
+  int64 userid = 2;                      // Go: bool
+  string status = 3;
+  repeated Goods goods = 4;      // Go: []Goods
+  double ordersum = 5; //Go: double
+  double accrualsum = 6; //Go: double
+  double withdrawalsum = 7;//Go: double
+  google.protobuf.Timestamp uploaded_at = 8;//Go: time.Time
+  google.protobuf.Timestamp processed_by_accrual_at = 9; //Go: time.Time
+  string uploaded_at_string = 10;
+  string processed_by_accrual_at_string = 11;
+}
+
+// описание типа Goods
+message Goods {
+  string description = 1;   // Go: string
+  int64  accrualsum = 2;  // Go: int64
+  double  price = 3;  // Go: double
+}
+
+message AccrualReply {
+  string order =1;
+  string status=2;
+  double accrual=3;
+}
+
+message GetOrdersItem {
+  string number = 1;
+  string status = 2;
+  double accrual = 3;
+  string uploaded_at = 4;
+}

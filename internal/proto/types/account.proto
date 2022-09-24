@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+// имя proto-пакета и версия
+// версию указывать необязательно, это общепринятый подход
+// для версионирования спецификации
+package types.v1beta1;
+
+// импорт внешнего proto-файла, который определяет Timestamp message
+// эта зависимость устанавливается вместе с protoc
+// Go-тип time.Time невозможно определить через proto3,
+// поэтому используем готовое решение
+//import "google/protobuf/timestamp.proto";
+
+// опция задаёт Go-путь для генерируемого типа
+option go_package = "/proto";
+
+// описание типа Order
+message Account {
+  int64 userid = 1;
+  string username = 2;
+  string password_hash = 3;
+}
+
+message InputAccount{
+  string login = 1;
+  string password = 2;
+}
