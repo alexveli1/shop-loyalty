@@ -72,7 +72,12 @@ func (a *OrderRepo) GetAccountOrders(ctx context.Context, account *proto2.Accoun
 		if uploadedAt.Valid {
 			ord.UploadedAt = fmt.Sprint(uploadedAt.Time.Local().Format(time.RFC3339))
 		}
-		orders = append(orders, ord)
+		orders = append(orders, proto2.GetOrdersItem{
+			Number:     ord.Number,
+			Status:     ord.Status,
+			Accrual:    ord.Accrual,
+			UploadedAt: ord.UploadedAt,
+		})
 	}
 	return orders, nil
 }

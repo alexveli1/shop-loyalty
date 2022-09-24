@@ -8,7 +8,7 @@ import (
 )
 
 func (h *Handler) GetAccountFromUsername(c *gin.Context) (*proto2.Account, error) {
-	userid, err := h.tokenManager.ExtractUserIdFromToken(c)
+	userid, err := h.tokenManager.ExtractUserIDFromToken(c)
 	if err != nil {
 		mylog.SugarLogger.Errorf("cannot get userid, %v", err)
 		return &proto2.Account{}, err

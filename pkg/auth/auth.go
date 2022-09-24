@@ -3,7 +3,6 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -19,13 +18,6 @@ import (
 var ErrInvalidAccessToken = errors.New("invalid auth token")
 var ErrUserDoesNotExist = errors.New("user does not exist")
 var ErrUserAlreadyExists = errors.New("user with such credentials already exist")
-
-// TokenManager provides logic for JWT & Refresh tokens generation and parsing.
-type TokenManager interface {
-	NewJWT(userId string, ttl time.Duration) (string, error)
-	Parse(accessToken string) (string, error)
-	NewRefreshToken() (string, error)
-}
 
 type Manager struct {
 	signingKey      string
@@ -44,57 +36,16 @@ func NewManager(cfg config.JWTConfig) (*Manager, error) {
 	}, nil
 }
 
-func (m *Manager) NewJWT(userId string, ttl time.Duration) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(ttl).Unix(),
-		Subject:   userId,
-	})
-
-	return token.SignedString([]byte(m.signingKey))
-}
-
-func (m *Manager) NewRefreshToken() (string, error) {
-	b := make([]byte, 32)
-
-	s := rand.NewSource(time.Now().Unix())
-	r := rand.New(s)
-
-	if _, err := r.Read(b); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", b), nil
-}
-
 type Claims struct {
 	jwt.StandardClaims
 	Username string `json:"username"`
 }
 
-func (m *Manager) ParseToken(accessToken string) (string, error) {
-	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return m.signingKey, nil
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims.Username, nil
-	}
-
-	return "", ErrInvalidAccessToken
-}
-
-func (m *Manager) GenerateToken(userid int64) (string, error) {
+func (m *Manager) GenerateToken(userID int64) (string, error) {
 
 	claims := jwt.StandardClaims{
 		ExpiresAt: time.Now().Add(m.accessTokenTTL).Unix(),
-		Subject:   fmt.Sprint(userid),
+		Subject:   fmt.Sprint(userID),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -131,16 +82,16 @@ func (m *Manager) ExtractToken(c *gin.Context) string {
 	bearerToken := c.Request.Header.Get("Authorization")
 	if bearerToken != "" {
 		if strings.Contains(bearerToken, " ") {
-		}
-		if len(strings.Split(bearerToken, " ")) == 2 {
+			if len(strings.Split(bearerToken, " ")) == 2 {
 
-			return strings.Split(bearerToken, " ")[1]
+				return strings.Split(bearerToken, " ")[1]
+			}
 		}
 	}
 	return bearerToken
 }
 
-func (m *Manager) ExtractUserIdFromToken(c *gin.Context) (int64, error) {
+func (m *Manager) ExtractUserIDFromToken(c *gin.Context) (int64, error) {
 	tokenString := m.ExtractToken(c)
 	claims := jwt.StandardClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {

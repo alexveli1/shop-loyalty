@@ -6,7 +6,7 @@ import (
 	mylog "github.com/alexveli/diploma/pkg/log"
 )
 
-func newResponse(c *gin.Context, statusCode int, message any) {
+func newResponse(c *gin.Context, statusCode int, message interface{}) {
 	mylog.SugarLogger.Infof("sending message %s with status %d", message, statusCode)
 	c.Writer.WriteHeader(statusCode)
 	var contents []byte
@@ -16,7 +16,10 @@ func newResponse(c *gin.Context, statusCode int, message any) {
 	case []byte:
 		contents = message.([]byte)
 	}
-	c.Writer.Write(contents)
+	_, err := c.Writer.Write(contents)
+	if err != nil {
+		mylog.SugarLogger.Errorf("cannot write response, %v", err)
+	}
 	c.Abort()
 	mylog.SugarLogger.Infof("Response is %v", c)
 }

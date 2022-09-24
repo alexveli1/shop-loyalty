@@ -17,7 +17,7 @@ import (
 
 type AccrualHTTPClient struct {
 	accrualSystemAddress string
-	accrualUrl           string
+	accrualGetRoot       string
 	retryInterval        time.Duration
 	retryLimit           int
 }
@@ -30,7 +30,7 @@ type HTTPClient interface {
 func NewAccrualHTTPClient(addr string, url string, retryInterval time.Duration, retryLimit int) *AccrualHTTPClient {
 	return &AccrualHTTPClient{
 		accrualSystemAddress: addr,
-		accrualUrl:           url,
+		accrualGetRoot:       url,
 		retryInterval:        retryInterval,
 		retryLimit:           retryLimit,
 	}
@@ -42,11 +42,10 @@ func (c *AccrualHTTPClient) SendToAccrual(ctx context.Context, orderid int64) (*
 			mylog.SugarLogger.Errorf("unexpected error caused panic, %v", r)
 		}
 	}()
-	mylog.SugarLogger.Info("trying to send request to accrual system: http://" + c.accrualSystemAddress + c.accrualUrl + fmt.Sprint(orderid))
 	r, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		"http://"+c.accrualSystemAddress+c.accrualUrl+fmt.Sprint(orderid),
+		"http://"+c.accrualSystemAddress+c.accrualGetRoot+fmt.Sprint(orderid),
 		nil,
 	)
 	if err != nil {
@@ -54,7 +53,6 @@ func (c *AccrualHTTPClient) SendToAccrual(ctx context.Context, orderid int64) (*
 
 		return &proto.AccrualReply{}, err
 	}
-
 	client := &http.Client{}
 	rand.Seed(time.Now().UnixNano())
 	retryInterval := c.retryInterval
@@ -70,32 +68,35 @@ func (c *AccrualHTTPClient) SendToAccrual(ctx context.Context, orderid int64) (*
 		switch resp.StatusCode {
 		case http.StatusTooManyRequests:
 			retryInterval = c.SetRetryInterval(resp.Header.Get("Retry-After"))
-
-			return &proto.AccrualReply{}, domain.ErrSenderTooManyRequests
 		case http.StatusOK:
 			body, err := io.ReadAll(resp.Body)
 			mylog.SugarLogger.Infof("response body from accrual received:, %s", string(body))
 			if err != nil {
 				mylog.SugarLogger.Errorf("Cannot io.ReadAll resp.Body, %v", err)
-
-				return &proto.AccrualReply{}, err
-			}
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
+				err1 := err
+				err := resp.Body.Close()
 				if err != nil {
-					mylog.SugarLogger.Errorf("Cannot close response body, %v", err)
+					mylog.SugarLogger.Errorf("cannot close request body, %v", err)
+
+					return &proto.AccrualReply{}, err
 				}
-			}(resp.Body)
+
+				return &proto.AccrualReply{}, err1
+			}
 			var accrualReply proto.AccrualReply
 			err = json.Unmarshal(body, &accrualReply)
-
-			mylog.SugarLogger.Infof("accrual system returned order, %v", accrualReply)
-
 			if err != nil {
 				mylog.SugarLogger.Errorf("cannot unmarshal body from accrual system, %v", err)
 
 				return &proto.AccrualReply{}, err
 			}
+			mylog.SugarLogger.Infof("accrual system returned order, %v", proto.AccrualReply{
+				Order:   accrualReply.Order,
+				Status:  accrualReply.Status,
+				Accrual: accrualReply.Accrual,
+			},
+			)
+
 			return &accrualReply, nil
 		}
 

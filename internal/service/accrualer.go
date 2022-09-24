@@ -63,28 +63,25 @@ func (h *Accrualer) UpdateOrderAndBalance(ctx context.Context, accrualReply *pro
 
 func (h *Accrualer) SendToAccrual(ctx context.Context) {
 	tick := time.NewTicker(h.sendInterval)
-	for {
-		select {
-		case <-tick.C:
-			order, ok := h.GetFirstUnprocessedOrder(ctx)
-			if ok {
-				processedOrder, err := h.client.SendToAccrual(ctx, order.Orderid)
-				if err == nil {
-					h.UpdateOrderAndBalance(ctx, &proto.Order{
-						Orderid:              order.Orderid,
-						Userid:               order.Userid,
-						Status:               processedOrder.Status,
-						Accrualsum:           processedOrder.Accrual,
-						ProcessedByAccrualAt: timestamppb.New(time.Now()),
-					})
-				} else {
-					h.UpdateOrderAndBalance(ctx, &proto.Order{
-						Orderid:              order.Orderid,
-						Userid:               order.Userid,
-						Status:               domain.NEW,
-						ProcessedByAccrualAt: timestamppb.New(time.Now()),
-					})
-				}
+	for range tick.C {
+		order, ok := h.GetFirstUnprocessedOrder(ctx)
+		if ok {
+			processedOrder, err := h.client.SendToAccrual(ctx, order.Orderid)
+			if err == nil {
+				h.UpdateOrderAndBalance(ctx, &proto.Order{
+					Orderid:              order.Orderid,
+					Userid:               order.Userid,
+					Status:               processedOrder.Status,
+					Accrualsum:           processedOrder.Accrual,
+					ProcessedByAccrualAt: timestamppb.New(time.Now()),
+				})
+			} else {
+				h.UpdateOrderAndBalance(ctx, &proto.Order{
+					Orderid:              order.Orderid,
+					Userid:               order.Userid,
+					Status:               domain.NEW,
+					ProcessedByAccrualAt: timestamppb.New(time.Now()),
+				})
 			}
 		}
 	}

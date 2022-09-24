@@ -10,20 +10,20 @@ import (
 func CheckOrderNumber(orderid int64) bool {
 	fullStringOrder := fmt.Sprint(orderid)
 	stringOrderWithoutCheckNum := fullStringOrder[0 : len(fullStringOrder)-1]
-	cleanOrderId, err := strconv.ParseInt(stringOrderWithoutCheckNum, 10, 64)
+	cleanOrderID, err := strconv.ParseInt(stringOrderWithoutCheckNum, 10, 64)
 	if err != nil {
 		mylog.SugarLogger.Errorf("error converting clean order number to int64, %v", err)
 
 		return false
 	}
-	stringCheckNumber := fullStringOrder[len(fullStringOrder)-1 : len(fullStringOrder)]
+	stringCheckNumber := fullStringOrder[len(fullStringOrder)-1:]
 	intCheckNumber, err := strconv.ParseInt(stringCheckNumber, 10, 64)
 	if err != nil {
 		mylog.SugarLogger.Errorf("error converting check number to int64, %v", err)
 
 		return false
 	}
-	if CalculateLuhn(cleanOrderId) == intCheckNumber {
+	if CalculateLuhn(cleanOrderID) == intCheckNumber {
 
 		return true
 	}
