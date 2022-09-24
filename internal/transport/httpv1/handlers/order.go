@@ -34,8 +34,8 @@ func (h *Handler) ProcessOrder(c *gin.Context) {
 	}
 	orderid, requestFormatIsValid := h.services.Accrual.CheckRequestFormat(body)
 	if !requestFormatIsValid {
-		mylog.SugarLogger.Errorf("request format is incorrect, %v", err)
-		newResponse(c, http.StatusBadRequest, err.Error())
+		mylog.SugarLogger.Infof("request format is incorrect")
+		newResponse(c, http.StatusBadRequest, "request format is incorrect")
 
 		return
 	}
@@ -46,7 +46,7 @@ func (h *Handler) ProcessOrder(c *gin.Context) {
 
 		return
 	}
-	orderCreatorUserId, orderAlreadyUploaded, err := h.services.Accrual.CheckOrderAlreadyUploaded(c.Request.Context(), orderid)
+	orderCreatorUserID, orderAlreadyUploaded, err := h.services.Accrual.CheckOrderAlreadyUploaded(c.Request.Context(), orderid)
 	if err != nil {
 		mylog.SugarLogger.Errorf("error while trying to check order existance, %v", err)
 		newResponse(c, http.StatusInternalServerError, err.Error())
@@ -54,7 +54,7 @@ func (h *Handler) ProcessOrder(c *gin.Context) {
 		return
 	}
 	if orderAlreadyUploaded {
-		if bySameUser(orderCreatorUserId, accountFromToken.Userid) {
+		if bySameUser(orderCreatorUserID, accountFromToken.Userid) {
 			mylog.SugarLogger.Infof("order already uploaded by current user, %v", err)
 			newResponse(c, http.StatusOK, "order already uploaded by current user")
 
@@ -70,8 +70,8 @@ func (h *Handler) ProcessOrder(c *gin.Context) {
 		&proto2.Order{Orderid: orderid, Userid: accountFromToken.Userid, Status: domain2.NEW, UploadedAt: timestamppb.Now()},
 	)
 	if !orderAddedToQueueSuccessfully {
-		mylog.SugarLogger.Errorf("sending to accrual was unsuccessful, %v", err)
-		newResponse(c, http.StatusInternalServerError, err.Error())
+		mylog.SugarLogger.Errorf("sending to accrual was unsuccessful")
+		newResponse(c, http.StatusInternalServerError, "sending to accrual was unsuccessful")
 
 		return
 	}

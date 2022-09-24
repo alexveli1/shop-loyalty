@@ -31,7 +31,7 @@ type (
 		SendInterval time.Duration `env:"SEND_INTERVAL" envDefault:"1s"`
 	}
 	HTTPServerConfig struct {
-		RunAddress string `env:"RUN_ADDRESS,required" envDefault:"127.0.0.1:8080"`
+		RunAddress string `env:"RUN_ADDRESS,required" envDefault:"127.0.0.1:8084"`
 	}
 	HashConfig struct {
 		Key string `env:"KEY" envDefault:"j3n4b%21&#"`

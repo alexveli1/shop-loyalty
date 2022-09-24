@@ -52,8 +52,8 @@ func (h *Handler) Withdraw(c *gin.Context) {
 		return
 	}
 	if !check.CheckOrderNumber(orderid) {
-		mylog.SugarLogger.Errorf("order number format incorrect, %v", err)
-		newResponse(c, http.StatusUnprocessableEntity, err.Error())
+		mylog.SugarLogger.Infof("order number format incorrect")
+		newResponse(c, http.StatusUnprocessableEntity, "order number format incorrect")
 
 		return
 	}

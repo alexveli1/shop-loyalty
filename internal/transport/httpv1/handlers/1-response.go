@@ -10,11 +10,11 @@ func newResponse(c *gin.Context, statusCode int, message interface{}) {
 	mylog.SugarLogger.Infof("sending message %s with status %d", message, statusCode)
 	c.Writer.WriteHeader(statusCode)
 	var contents []byte
-	switch message.(type) {
+	switch message := message.(type) {
 	case string:
-		contents = []byte(message.(string))
+		contents = []byte(message)
 	case []byte:
-		contents = message.([]byte)
+		contents = message
 	}
 	_, err := c.Writer.Write(contents)
 	if err != nil {

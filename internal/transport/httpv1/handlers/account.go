@@ -8,6 +8,7 @@ import (
 
 	"github.com/alexveli/diploma/internal/domain"
 	"github.com/alexveli/diploma/internal/proto"
+	mylog "github.com/alexveli/diploma/pkg/log"
 )
 
 func (h *Handler) UserRegister(c *gin.Context) {
@@ -37,7 +38,11 @@ func (h *Handler) UserRegister(c *gin.Context) {
 		return
 	}
 	token, err := h.tokenManager.GenerateToken(account.Userid)
+	if err != nil {
+		mylog.SugarLogger.Errorf("cannot generate token for user %d, %v", account.Userid, err)
 
+		return
+	}
 	c.Header("Authorization", token)
 	newResponse(c, http.StatusOK, "user "+account.Username+" successfully registered")
 }
@@ -70,7 +75,11 @@ func (h *Handler) UserLogin(c *gin.Context) {
 	}
 
 	token, err := h.tokenManager.GenerateToken(account.Userid)
+	if err != nil {
+		mylog.SugarLogger.Errorf("cannot generate token for user %d, %v", account.Userid, err)
 
+		return
+	}
 	c.Header("Authorization", token)
 	newResponse(c, http.StatusOK, "user logged")
 }
