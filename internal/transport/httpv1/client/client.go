@@ -45,7 +45,7 @@ func (c *AccrualHTTPClient) SendToAccrual(ctx context.Context, orderid int64) (*
 	r, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		"http://"+c.accrualSystemAddress+c.accrualGetRoot+fmt.Sprint(orderid),
+		c.accrualSystemAddress+c.accrualGetRoot+fmt.Sprint(orderid),
 		nil,
 	)
 	if err != nil {
