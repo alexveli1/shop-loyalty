@@ -10,18 +10,14 @@ import (
 
 var SugarLogger *zap.SugaredLogger
 
-func InitLogger(filename string) *zap.SugaredLogger {
+func InitLogger() *zap.SugaredLogger {
 	defer func() {
 		if re := recover(); re != nil {
 			log.Println("recovered error:", re)
 		}
 	}()
 	encoder := getEncoder()
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-	writeSyncer := zapcore.AddSync(f)
+	writeSyncer := zapcore.AddSync(os.Stdout)
 	core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 	SugarLogger := logger.Sugar()

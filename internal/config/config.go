@@ -22,7 +22,7 @@ type (
 		Timeout     time.Duration `env:"DATABASE_TIMEOUT" envDefault:"30s"`
 	}
 	HTTPClientConfig struct {
-		AccrualSystemAddress string        `env:"ACCRUAL_SYSTEM_ADDRESS,required" envDefault:"127.0.0.1:8081"`
+		AccrualSystemAddress string        `env:"ACCRUAL_SYSTEM_ADDRESS,required"`
 		AccrualSystemGetRoot string        `env:"ACCRUAL_URL,required" envDefault:"/api/orders/"`
 		RetryInterval        time.Duration `env:"RETRY_INTERVAL,required" envDefault:"1s"`
 		RetryLimit           int           `env:"RETRY_LIMIT,required" envDefault:"10"`
@@ -31,7 +31,7 @@ type (
 		SendInterval time.Duration `env:"SEND_INTERVAL" envDefault:"1s"`
 	}
 	HTTPServerConfig struct {
-		RunAddress string `env:"RUN_ADDRESS,required" envDefault:"127.0.0.1:8084"`
+		RunAddress string `env:"RUN_ADDRESS,required"`
 	}
 	HashConfig struct {
 		Key string `env:"KEY" envDefault:"j3n4b%21&#"`
