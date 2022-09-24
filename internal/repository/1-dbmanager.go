@@ -33,9 +33,6 @@ const creatorSQL = `create table if not exists orders
     status                 text
 );
 
-alter table orders
-    owner to "user";
-
 create unique index if not exists orders_orderid_uindex
     on orders (orderid);
 
@@ -49,9 +46,6 @@ create table if not exists balances
     withdrawn double precision
 );
 
-alter table balances
-    owner to "user";
-
 create unique index if not exists balances_userid_uindex
     on balances (userid);
 
@@ -64,9 +58,6 @@ create table if not exists accounts
     username     text not null,
     passwordhash text not null
 );
-
-alter table accounts
-    owner to "user";
 
 create unique index if not exists accounts_userid_uindex
     on accounts (userid);
@@ -83,10 +74,7 @@ create table if not exists withdrawals
     sum           double precision,
     userid        integer,
     processed_at  timestamp
-);
-
-alter table withdrawals
-    owner to "user";`
+);`
 
 func (d *DBCreator) CreateTables(ctx context.Context) error {
 	_, err := d.db.Exec(ctx, creatorSQL)
