@@ -81,7 +81,6 @@ func Run() {
 
 	startServer(ctx, srv)
 
-	return
 }
 
 func setFlags(cfg *config.Config) {
