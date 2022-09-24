@@ -12,7 +12,6 @@ import (
 
 	"github.com/alexveli/diploma/internal/config"
 	repository2 "github.com/alexveli/diploma/internal/repository"
-	"github.com/alexveli/diploma/internal/server"
 	"github.com/alexveli/diploma/internal/service"
 	"github.com/alexveli/diploma/internal/transport/httpv1/client"
 	"github.com/alexveli/diploma/internal/transport/httpv1/handlers"
@@ -77,11 +76,16 @@ func Run() {
 	handler := handlers.NewHandler(services, tokenManager, *hasher)
 	mylog.SugarLogger.Infof("Handlers set: %v", handler)
 
-	srv := server.NewServer(&cfg, handler.Init(&cfg))
+	//srv := server.NewServer(&cfg, handler.Init(&cfg))
+
+	srv := &http.Server{
+		Addr:    cfg.Server.RunAddress,
+		Handler: handler.Init(&cfg),
+	}
 
 	quit := make(chan os.Signal, 1)
 	go func() {
-		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			mylog.SugarLogger.Errorf("error occurred while running http server: %s\n", err.Error())
 			quit <- syscall.SIGTERM
 		}
@@ -97,7 +101,7 @@ func Run() {
 	ctx, shutdown := context.WithTimeout(ctx, timeout)
 	defer shutdown()
 
-	if err := srv.Stop(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil {
 		mylog.SugarLogger.Errorf("failed to stop server: %v", err)
 	}
 
