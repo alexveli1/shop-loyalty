@@ -23,7 +23,7 @@ import (
 )
 
 func Run() {
-	mylog.SugarLogger = mylog.InitLogger("gophermart.out")
+	mylog.SugarLogger = mylog.InitLogger()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
