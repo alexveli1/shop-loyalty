@@ -84,7 +84,7 @@ create table if not exists withdrawals
 	BalanceGetByUserID     = "SELECT current, withdrawn FROM balances WHERE userid = $1"
 	BalanceInsertWithdrawn = "INSERT INTO balances (userid, current, withdrawn) VALUES ($1, $2, $3)"
 	BalanceUpdateWithdrawn = " ON CONFLICT (userid) DO UPDATE SET current=EXCLUDED.current, withdrawn=EXCLUDED.withdrawn"
-	WithdrawalInsert       = "INSERT INTO withdrawals (orderid, userid, sum, processed_at) VALUES ($1,$2,$3,$4)"
+	WithdrawalInsert       = "INSERT INTO withdrawals (orderid, userid, sum, processed_at) VALUES ($1, $2, $3, $4)"
 
 	//Orders
 	OrdersGetByUserID = `SELECT orderid, status, accrualsum, uploaded_at FROM orders WHERE userid = $1 ORDER BY uploaded_at`
