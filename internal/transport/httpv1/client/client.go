@@ -71,38 +71,11 @@ func (c *AccrualHTTPClient) SendToAccrual(ctx context.Context, orderid int64) (*
 		case http.StatusTooManyRequests:
 			retryInterval = c.SetRetryInterval(resp.Header.Get("Retry-After"))
 		case http.StatusOK:
-			body, err := io.ReadAll(resp.Body)
-			mylog.SugarLogger.Infof("response body from accrual received:, %s", string(body))
-			if err != nil {
-				mylog.SugarLogger.Errorf("Cannot io.ReadAll resp.Body, %v", err)
-				err1 := err
-				err := resp.Body.Close()
-				if err != nil {
-					mylog.SugarLogger.Errorf("cannot close request body, %v", err)
 
-					return &proto.AccrualReply{}, err
-				}
-
-				return &proto.AccrualReply{}, err1
-			}
-			var accrualReply proto.AccrualReply
-			err = json.Unmarshal(body, &accrualReply)
-			if err != nil {
-				mylog.SugarLogger.Errorf("cannot unmarshal body from accrual system, %v", err)
-
-				return &proto.AccrualReply{}, err
-			}
-			mylog.SugarLogger.Infof("accrual system returned order, %v", proto.AccrualReply{
-				Order:   accrualReply.Order,
-				Status:  accrualReply.Status,
-				Accrual: accrualReply.Accrual,
-			},
-			)
-
-			return &accrualReply, nil
+			return c.ProcessResponse(resp)
 		}
-
 	}
+
 	return &proto.AccrualReply{}, domain.ErrSenderCannotSendRequestToAccrual
 }
 
@@ -115,4 +88,35 @@ func (c *AccrualHTTPClient) SetRetryInterval(accrualRetryInterval string) time.D
 	}
 
 	return time.Duration(retNum) * time.Second
+}
+func (c *AccrualHTTPClient) ProcessResponse(resp *http.Response) (*proto.AccrualReply, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		mylog.SugarLogger.Errorf("Cannot io.ReadAll resp.Body, %v", err)
+
+		return &proto.AccrualReply{}, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			mylog.SugarLogger.Errorf("cannot close request body, %v", err)
+		}
+	}(resp.Body)
+
+	mylog.SugarLogger.Infof("response body from accrual received:, %s", string(body))
+	var accrualReply proto.AccrualReply
+	err = json.Unmarshal(body, &accrualReply)
+	if err != nil {
+		mylog.SugarLogger.Errorf("cannot unmarshal body from accrual system, %v", err)
+
+		return &proto.AccrualReply{}, err
+	}
+	mylog.SugarLogger.Infof("accrual system returned order, %v", proto.AccrualReply{
+		Order:   accrualReply.Order,
+		Status:  accrualReply.Status,
+		Accrual: accrualReply.Accrual,
+	},
+	)
+
+	return &accrualReply, nil
 }
