@@ -21,8 +21,10 @@ func (a *AccountService) Register(ctx context.Context, account *proto.Account) e
 	err := a.repo.StoreAccount(ctx, account)
 	if err != nil {
 		mylog.SugarLogger.Errorf("cannot store user account: %v", err)
+
 		return err
 	}
+
 	return nil
 }
 

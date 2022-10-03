@@ -17,19 +17,6 @@ func NewOrderService(repo repository.Order) *OrderService {
 	return &OrderService{repo: repo}
 }
 
-func (o *OrderService) BindOrderToAccount(ctx context.Context, account *proto2.Account, orderid int64) error {
-	order := proto2.Order{
-		Userid:  account.Userid,
-		Orderid: orderid,
-	}
-	err := o.repo.StoreOrder(&order)
-	if err != nil {
-		mylog.SugarLogger.Errorf("cannot bind order to username, %v", err)
-		return err
-	}
-	return nil
-}
-
 func (o *OrderService) GetAccountOrders(ctx context.Context, account *proto2.Account) ([]byte, error) {
 	orders, err := o.repo.GetAccountOrders(ctx, account)
 	if err != nil {

@@ -14,15 +14,15 @@ import (
 	mylog "github.com/alexveli/diploma/pkg/log"
 )
 
-type Accrualer struct {
+type AccrualService struct {
 	sendInterval time.Duration
 	reqCh        chan string
 	repo         repository.Accrualer
 	client       client.HTTPClient
 }
 
-func NewAccrualer(interval time.Duration, repo repository.Accrualer, client client.HTTPClient) *Accrualer {
-	return &Accrualer{
+func NewAccrualer(interval time.Duration, repo repository.Accrualer, client client.HTTPClient) *AccrualService {
+	return &AccrualService{
 		sendInterval: interval,
 		reqCh:        make(chan string),
 		repo:         repo,
@@ -30,7 +30,7 @@ func NewAccrualer(interval time.Duration, repo repository.Accrualer, client clie
 	}
 }
 
-func (h *Accrualer) CheckRequestFormat(content string) (int64, bool) {
+func (h *AccrualService) CheckRequestFormat(content string) (int64, bool) {
 	num, err := strconv.ParseInt(content, 10, 64)
 	if err != nil {
 		mylog.SugarLogger.Errorf("cannot convert content to int64, %v", err)
@@ -40,10 +40,10 @@ func (h *Accrualer) CheckRequestFormat(content string) (int64, bool) {
 	return num, true
 }
 
-func (h *Accrualer) CheckOrderAlreadyUploaded(ctx context.Context, orderid int64) (int64, bool, error) {
+func (h *AccrualService) CheckOrderAlreadyUploaded(ctx context.Context, orderid int64) (int64, bool, error) {
 	return h.repo.CheckOrderAlreadyUploaded(ctx, orderid)
 }
-func (h *Accrualer) AddOrderToQueue(ctx context.Context, order *proto.Order) bool {
+func (h *AccrualService) AddOrderToQueue(ctx context.Context, order *proto.Order) bool {
 	ok := h.repo.InsertOrUpdateOrder(ctx, order)
 	if !ok {
 		mylog.SugarLogger.Errorf("cannot update order")
@@ -53,15 +53,15 @@ func (h *Accrualer) AddOrderToQueue(ctx context.Context, order *proto.Order) boo
 	return true
 }
 
-func (h *Accrualer) GetFirstUnprocessedOrder(ctx context.Context) (*proto.Order, bool) {
+func (h *AccrualService) GetFirstUnprocessedOrder(ctx context.Context) (*proto.Order, bool) {
 	return h.repo.GetFirstUnprocessedOrder(ctx)
 }
 
-func (h *Accrualer) UpdateOrderAndBalance(ctx context.Context, accrualReply *proto.Order) {
+func (h *AccrualService) UpdateOrderAndBalance(ctx context.Context, accrualReply *proto.Order) {
 	h.repo.IncreaseOrderAccrualAndBalanceCurrent(ctx, accrualReply)
 }
 
-func (h *Accrualer) SendToAccrual(ctx context.Context) {
+func (h *AccrualService) SendToAccrual(ctx context.Context) {
 	tick := time.NewTicker(h.sendInterval)
 	for range tick.C {
 		order, ok := h.GetFirstUnprocessedOrder(ctx)

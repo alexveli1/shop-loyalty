@@ -25,7 +25,7 @@ func NewAccountRepo(db *pgxpool.Pool) *AccountRepo {
 
 func (a *AccountRepo) GetAccount(ctx context.Context, login *proto.Account) (*proto.Account, error) {
 	var account proto.Account
-	row := a.conn.QueryRow(ctx, "SELECT userid, username, passwordhash FROM accounts WHERE username = $1 OR userid = $2", login.Username, login.Userid)
+	row := a.conn.QueryRow(ctx, domain.AccountGetByNameOrID, login.Username, login.Userid)
 	err := row.Scan(&account.Userid, &account.Username, &account.PasswordHash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -43,55 +43,25 @@ func (a *AccountRepo) GetAccount(ctx context.Context, login *proto.Account) (*pr
 
 func (a *AccountRepo) StoreAccount(ctx context.Context, account *proto.Account) error {
 	var userid sql.NullInt64
-	selectAccount := "SELECT userid FROM accounts WHERE username=$1"
-	tx, err := a.conn.BeginTx(ctx, pgx.TxOptions{})
-	defer func() {
-		if err != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
-				mylog.SugarLogger.Errorf("cannot rollback transaction, %v", err)
-
-				return
-			}
-		} else {
-			err := tx.Commit(ctx)
-			if err != nil {
-				mylog.SugarLogger.Errorf("cannot commit transaction, %v", err)
-
-				return
-			}
-		}
-	}()
+	executionResult := a.conn.QueryRow(ctx, domain.InsertNewAccount, account.Username, account.PasswordHash)
+	err := executionResult.Scan(&userid)
 	if err != nil {
-		mylog.SugarLogger.Errorf("cannot initiate transaction, %v", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			mylog.SugarLogger.Errorf("user already exists: %v", err)
+
+			return domain.ErrUserAlreadyExists
+		}
+		mylog.SugarLogger.Errorf("cannot insert into accounts table: %v", err)
 
 		return err
 	}
-	row := tx.QueryRow(ctx, selectAccount, account.Username)
-	err = row.Scan(&userid)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
+	if !userid.Valid {
+		mylog.SugarLogger.Errorf("error scanning userid - userid not valid")
 
-			mylog.SugarLogger.Errorf("cannot get account, %v", err)
-
-			return err
-		}
+		return domain.ErrUserIDInvalid
 	}
-	executionResult := a.conn.QueryRow(ctx, "INSERT INTO accounts (username, passwordhash) VALUES($1,$2) RETURNING userid", account.Username, account.PasswordHash)
-	err = executionResult.Scan(&userid)
-	if err != nil {
-		mylog.SugarLogger.Errorf("cannot store account: %v", err)
-
-		return err
-	}
-	if userid.Valid {
-		account.Userid = userid.Int64
-	}
+	account.Userid = userid.Int64
 	mylog.SugarLogger.Infof("user %s successfully registered with id %d", account.Username, account.Userid)
 	err = nil
 	return err
-}
-
-func (a *AccountRepo) DeleteAllAccounts(ctx context.Context) {
-	_, _ = a.conn.Exec(ctx, "TRUNCATE accounts")
 }
