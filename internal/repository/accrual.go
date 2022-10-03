@@ -52,7 +52,7 @@ func (a *AccrualerRepo) IncreaseOrderAccrualAndBalanceCurrent(ctx context.Contex
 		}
 	}()
 
-	defer defer_tx(ctx, tx, err)
+	defer deferTx(ctx, tx, err)
 
 	_, err = tx.Exec(
 		ctx,

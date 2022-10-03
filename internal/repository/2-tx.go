@@ -8,7 +8,7 @@ import (
 	mylog "github.com/alexveli/diploma/pkg/log"
 )
 
-func defer_tx(ctx context.Context, tx pgx.Tx, err error) {
+func deferTx(ctx context.Context, tx pgx.Tx, err error) {
 	if tx == nil {
 
 		return

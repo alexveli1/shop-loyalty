@@ -62,13 +62,8 @@ func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) er
 		}
 	}()
 
-	defer defer_tx(ctx, tx, err)
+	defer deferTx(ctx, tx, err)
 
-	if err != nil {
-		mylog.SugarLogger.Errorf("cannot conver order string to int64, %v", err)
-
-		return err
-	}
 	var balance proto.Balance
 	var current, withdrawn sql.NullFloat64
 	selectedBalance := tx.QueryRow(
