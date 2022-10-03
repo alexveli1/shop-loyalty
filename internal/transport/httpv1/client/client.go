@@ -20,6 +20,7 @@ type AccrualHTTPClient struct {
 	accrualGetRoot       string
 	retryInterval        time.Duration
 	retryLimit           int
+	client               *http.Client
 }
 
 type HTTPClient interface {
@@ -33,6 +34,7 @@ func NewAccrualHTTPClient(addr string, url string, retryInterval time.Duration, 
 		accrualGetRoot:       url,
 		retryInterval:        retryInterval,
 		retryLimit:           retryLimit,
+		client:               &http.Client{},
 	}
 }
 
@@ -53,11 +55,11 @@ func (c *AccrualHTTPClient) SendToAccrual(ctx context.Context, orderid int64) (*
 
 		return &proto.AccrualReply{}, err
 	}
-	client := &http.Client{}
+
 	rand.Seed(time.Now().UnixNano())
 	retryInterval := c.retryInterval
 	for i := 0; i < c.retryLimit; i++ {
-		resp, err := client.Do(r)
+		resp, err := c.client.Do(r)
 		if err != nil {
 			mylog.SugarLogger.Errorf("cannot send request to accrual, %v", err)
 			time.Sleep(retryInterval)

@@ -31,7 +31,6 @@ type Account interface {
 }
 
 type Order interface {
-	BindOrderToAccount(ctx context.Context, account *proto2.Account, orderid int64) error
 	GetAccountOrders(ctx context.Context, account *proto2.Account) ([]byte, error)
 }
 

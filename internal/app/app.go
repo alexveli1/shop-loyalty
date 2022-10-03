@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/alexveli/diploma/internal/config"
 	repository2 "github.com/alexveli/diploma/internal/repository"
@@ -51,24 +50,22 @@ func Run() {
 	if err != nil {
 		mylog.SugarLogger.Fatalf("cannot generate tables in database, %v", err)
 	}
-	//prepare gophermart database
-	repos.Order.DeleteAllOrders(ctx)
-	repos.Balance.DeleteAllBalances(ctx)
-	repos.Account.DeleteAllAccounts(ctx)
+	//delete table contents in case tables already exist
+	dbmanager.DeleteTableCotents(ctx)
 
-	tokenManager, err := auth.NewManager(cfg.Auth.JWT)
+	tokenManager, err := auth.NewManager(cfg.JWT)
 	if err != nil {
 		mylog.SugarLogger.Fatalf("Cannot initiate tockenManager: %v", err)
 	}
 	mylog.SugarLogger.Infof("TokenManager set: %v", tokenManager)
 
-	hasher := hash.NewHasher(cfg.Hash.Key)
+	hasher := hash.NewHasher(cfg.Server.HashKey)
 	mylog.SugarLogger.Infof("Hasher set: %v", hasher)
 
 	accrualHTTPClient := client.NewAccrualHTTPClient(cfg.Client.AccrualSystemAddress, cfg.Client.AccrualSystemGetRoot, cfg.Client.RetryInterval, cfg.Client.RetryLimit)
 	mylog.SugarLogger.Infof("Client set: %v", accrualHTTPClient)
 
-	services := service.NewServices(repos, cfg.Accrual.SendInterval, accrualHTTPClient)
+	services := service.NewServices(repos, cfg.Client.SendInterval, accrualHTTPClient)
 	mylog.SugarLogger.Infof("Services set: %v", services)
 
 	go services.Accrual.SendToAccrual(ctx)
@@ -96,9 +93,7 @@ func Run() {
 	<-quit
 	mylog.SugarLogger.Info("terminating")
 
-	const timeout = 1 * time.Second
-
-	ctx, shutdown := context.WithTimeout(ctx, timeout)
+	ctx, shutdown := context.WithTimeout(ctx, cfg.Server.TerminateTimeout)
 	defer shutdown()
 
 	if err := srv.Shutdown(ctx); err != nil {

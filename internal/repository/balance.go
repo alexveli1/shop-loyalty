@@ -25,8 +25,7 @@ func NewBalanceRepo(db *pgxpool.Pool) *BalanceRepo {
 	}
 }
 func (a *BalanceRepo) GetAccountBalance(ctx context.Context, userid int64) (*proto.Balance, error) {
-	selectBalance := "SELECT current, withdrawn FROM balances WHERE userid=$1"
-	row := a.conn.QueryRow(ctx, selectBalance, userid)
+	row := a.conn.QueryRow(ctx, domain.BalanceGetByUserID, userid)
 	var balance proto.Balance
 	var current, withdrawn sql.NullFloat64
 	err := row.Scan(&current, &withdrawn)
@@ -50,12 +49,9 @@ func (a *BalanceRepo) GetAccountBalance(ctx context.Context, userid int64) (*pro
 }
 
 func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) error {
-	selectBalance := "SELECT current, withdrawn FROM balances WHERE userid = $1"
-	balanceInsert := "INSERT INTO balances (userid, current, withdrawn) VALUES ($1, $2, $3)"
-	balanceUpdate := " ON CONFLICT (userid) DO UPDATE SET current=EXCLUDED.current, withdrawn=EXCLUDED.withdrawn"
-	insertWithdrawal := "INSERT INTO withdrawals (orderid, userid, sum, processed_at) VALUES ($1,$2,$3,$4)"
 	tx, err := a.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
+		tx = nil
 		mylog.SugarLogger.Errorf("cannot create transaction, %v", err)
 
 		return err
@@ -65,22 +61,9 @@ func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) er
 			mylog.SugarLogger.Errorf("unexpected panic, %v", r)
 		}
 	}()
-	defer func() {
-		if err != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
-				mylog.SugarLogger.Errorf("cannot rollback transaction, %v", err)
 
-				return
-			}
-		}
-		err := tx.Commit(ctx)
-		if err != nil {
-			mylog.SugarLogger.Errorf("cannot commit transaction, %v", err)
+	defer tx(ctx, tx, err)
 
-			return
-		}
-	}()
 	if err != nil {
 		mylog.SugarLogger.Errorf("cannot conver order string to int64, %v", err)
 
@@ -90,7 +73,7 @@ func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) er
 	var current, withdrawn sql.NullFloat64
 	selectedBalance := tx.QueryRow(
 		ctx,
-		selectBalance,
+		domain.BalanceGetByUserID,
 		withdraw.Userid,
 	)
 	err = selectedBalance.Scan(&current, &withdrawn)
@@ -120,7 +103,7 @@ func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) er
 	newWithdrawn := balance.Withdrawn + withdraw.Sum
 	_, err = tx.Exec(
 		ctx,
-		balanceInsert+balanceUpdate,
+		domain.BalanceInsertWithdrawn+domain.BalanceUpdateWithdrawn,
 		withdraw.Userid,
 		newCurrent,
 		newWithdrawn,
@@ -133,7 +116,7 @@ func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) er
 
 	_, err = tx.Exec(
 		ctx,
-		insertWithdrawal,
+		domain.WithdrawalInsert,
 		withdraw.Order,
 		withdraw.Userid,
 		withdraw.Sum,
@@ -148,8 +131,7 @@ func (a *BalanceRepo) Withdraw(ctx context.Context, withdraw *proto.Withdraw) er
 }
 
 func (a *BalanceRepo) GetAccountWithdrals(ctx context.Context, userid int64) ([]proto.Withdraw, error) {
-	selectWithdrawls := "SELECT orderid, sum, processed_at FROM withdrawals WHERE userid = $1 ORDER BY processed_at DESC"
-	rows, err := a.conn.Query(ctx, selectWithdrawls, userid)
+	rows, err := a.conn.Query(ctx, domain.WithdrawalGetByUserID, userid)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			mylog.SugarLogger.Errorf("no withdrawls for the user, %v", err)
@@ -189,8 +171,4 @@ func (a *BalanceRepo) GetAccountWithdrals(ctx context.Context, userid int64) ([]
 	}
 
 	return withdrawals, nil
-}
-
-func (a *BalanceRepo) DeleteAllBalances(ctx context.Context) {
-	_, _ = a.conn.Exec(ctx, "TRUNCATE balances")
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	domain2 "github.com/alexveli/diploma/internal/domain"
-	proto2 "github.com/alexveli/diploma/internal/proto"
+	"github.com/alexveli/diploma/internal/domain"
+	"github.com/alexveli/diploma/internal/proto"
 	"github.com/alexveli/diploma/pkg/check"
 	mylog "github.com/alexveli/diploma/pkg/log"
 )
@@ -67,7 +67,7 @@ func (h *Handler) ProcessOrder(c *gin.Context) {
 	}
 	orderAddedToQueueSuccessfully := h.services.Accrual.AddOrderToQueue(
 		c.Request.Context(),
-		&proto2.Order{Orderid: orderid, Userid: accountFromToken.Userid, Status: domain2.NEW, UploadedAt: timestamppb.Now()},
+		&proto.Order{Orderid: orderid, Userid: accountFromToken.Userid, Status: domain.NEW, UploadedAt: timestamppb.Now()},
 	)
 	if !orderAddedToQueueSuccessfully {
 		mylog.SugarLogger.Errorf("sending to accrual was unsuccessful")
@@ -89,9 +89,9 @@ func (h *Handler) GetOrders(c *gin.Context) {
 	}
 	byteOrders, err := h.services.Order.GetAccountOrders(c.Request.Context(), accountFromToken)
 	if err != nil {
-		if errors.Is(err, domain2.ErrOrderNoOrders) {
+		if errors.Is(err, domain.ErrOrderNoOrders) {
 			mylog.SugarLogger.Errorf("no orders found for user %s", accountFromToken.Username)
-			newResponse(c, http.StatusNoContent, domain2.ErrOrderNoOrders.Error())
+			newResponse(c, http.StatusNoContent, domain.ErrOrderNoOrders.Error())
 
 			return
 		}
